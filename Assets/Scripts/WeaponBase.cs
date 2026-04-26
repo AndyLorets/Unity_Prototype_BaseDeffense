@@ -10,54 +10,37 @@ public abstract class WeaponBase : MonoBehaviour
     [SerializeField] private ParticleSystem _shootEffect;
     [SerializeField] private MeshRenderer _iconMR;
     [SerializeField] private IndexInfo _indexInfo;
-    [SerializeField] private AudioClip _audioEffect;  
+    [SerializeField] private AudioClip _audioEffect;
+    [SerializeField] private CrosshairController _crosshair;
 
-    private TargetController _targetController;
-    private ITakeDamage _takeDamage;
-
-    protected ITakeDamage GetCurrentTarget() => _takeDamage;
+    protected ITakeDamage CurrentTarget => _crosshair != null ? _crosshair.CurrentTarget : null;
 
     protected virtual void Start()
     {
-        Construct(); 
+        _iconMR.material.color = _indexInfo.GetIndexColor(_damgeIndex);
     }
-    protected virtual void Construct()
-    {
-        _targetController = ServiceLocator.GetService<TargetController>();
-        _targetController.onTargetEnter += OnEnemyEnterTarget;
-        _targetController.onTargetExit += OnEnemyExitTarget;
 
-        _iconMR.material.color = _indexInfo.GetIndexColor(_damgeIndex); 
-    }
     protected virtual void Update()
     {
-        LookTarget(); 
+        if (_crosshair != null)
+        {
+            transform.LookAt(_crosshair.transform.position);
+            transform.eulerAngles = new Vector3(0, transform.eulerAngles.y, 0);
+            _shootEffect.transform.LookAt(_crosshair.transform.position + Vector3.up * 5);
+        }
     }
-    private void LookTarget()
-    {
-        transform.LookAt(_targetController.transform.position); 
-        transform.eulerAngles = new Vector3(0, transform.eulerAngles.y, 0);
-        _shootEffect.transform.LookAt(_targetController.transform.position + Vector3.up * 5);
-    }
-    private void OnEnemyEnterTarget(ITakeDamage takeDamage)
-    {
-        _takeDamage = takeDamage; 
-    }
-    private void OnEnemyExitTarget()
-    {
-        _takeDamage = null; 
-    }
+
     protected virtual void Shoot()
     {
-        if (_takeDamage == null) return;
+        ITakeDamage target = CurrentTarget;
+        if (target == null) return;
 
         ServiceLocator.GetService<AudioManager>().PlayOneShot(_audioEffect);
         _shootEffect.Play();
         int effectiveIndex = _universalDamage ? -1 : _damgeIndex;
-        _takeDamage.TakeDamage(_damageValue, effectiveIndex);
+        target.TakeDamage(_damageValue, effectiveIndex);
     }
 
-    // Always fires effect/sound; deals damage only if target exists
     protected void ShootAt(ITakeDamage target)
     {
         ServiceLocator.GetService<AudioManager>().PlayOneShot(_audioEffect);

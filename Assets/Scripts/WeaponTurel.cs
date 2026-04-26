@@ -41,10 +41,10 @@ public class WeaponTurel : WeaponBase
         _isReloading = false;
     }
 
-    // Button mode: fires at trigger target first, then searches nearby
+    // Button mode: fires at crosshair target first, then searches nearby
     private void FireButton()
     {
-        ITakeDamage target = GetCurrentTarget();
+        ITakeDamage target = CurrentTarget;
         if (target != null)
         {
             ShootAt(target);

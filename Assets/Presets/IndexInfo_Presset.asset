@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: IndexInfo_Presset
   m_EditorClassIdentifier: 
   _colors:
-  - {r: 0.20392157, g: 1, b: 0, a: 1}
+  - {r: 1, g: 0.28841394, b: 0, a: 1}
   - {r: 0.0990566, g: 0.4728222, b: 1, a: 1}
   - {r: 1, g: 0.64067703, b: 0.1745283, a: 1}
   - {r: 0.79125035, g: 0.1273585, b: 1, a: 1}

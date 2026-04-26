@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class CrosshairController : MonoBehaviour
@@ -9,15 +10,23 @@ public class CrosshairController : MonoBehaviour
     [SerializeField] private Vector3 _boundsSize = new(20f, 0f, 20f);
     [SerializeField] internal bool _useSmoothing = false;
     [SerializeField] internal float _smoothSpeed = 10f;
-    [SerializeField] private MeshRenderer _crosshairRenderer;
+    [SerializeField] private MeshRenderer _meshRenderer;
+    [SerializeField] private GameSettings _settings;
+    [SerializeField] private float _detectionRadius = 1.5f;
 
-    private static readonly Color _idleColor = Color.white;
-    private static readonly Color _targetColor = Color.red;
+    public static readonly Color IdleColor = Color.white;
+    public static readonly Color TargetColor = Color.red;
+
+    public event Action<Color> OnColorChanged;
+
+    public ITakeDamage CurrentTarget { get; private set; }
+
+    // Raw screen position of the crosshair — use this for UI to avoid perspective offset
+    public Vector2 ScreenPosition { get; private set; }
 
     private Vector2 _lastScreenPos;
     private Plane _groundPlane;
     private Vector3 _targetPosition;
-    private TargetController _targetController;
 
     private Vector3 Min => _boundsCenter - _boundsSize * 0.5f;
     private Vector3 Max => _boundsCenter + _boundsSize * 0.5f;
@@ -29,42 +38,48 @@ public class CrosshairController : MonoBehaviour
         _targetPosition = transform.position;
     }
 
-    private void Start()
-    {
-        _targetController = ServiceLocator.GetService<TargetController>();
-        _targetController.onTargetEnter += OnTargetEnter;
-        _targetController.onTargetExit += OnTargetExit;
-    }
+    private bool Is3DMode => _settings == null || _settings.crosshairMode == GameSettings.CrosshairMode.World3D;
 
-    private void OnDestroy()
+    public void ApplyRendererMode()
     {
-        if (_targetController == null) return;
-        _targetController.onTargetEnter -= OnTargetEnter;
-        _targetController.onTargetExit -= OnTargetExit;
-    }
-
-    private void OnTargetEnter(ITakeDamage _) => SetColor(_targetColor);
-    private void OnTargetExit() => SetColor(_idleColor);
-
-    private void SetColor(Color color)
-    {
-        if (_crosshairRenderer == null) return;
-        _crosshairRenderer.material.color = color;
+        if (_meshRenderer != null)
+            _meshRenderer.enabled = Is3DMode;
     }
 
     private void Update()
     {
         HandleInput();
         ApplySmoothing();
+        UpdateTarget();
+        ApplyRendererMode();
+    }
+
+    private void UpdateTarget()
+    {
+        ITakeDamage previous = CurrentTarget;
+        CurrentTarget = null;
+
+        if (_camera != null && ScreenPosition != Vector2.zero)
+        {
+            Ray ray = _camera.ScreenPointToRay(ScreenPosition);
+            if (Physics.Raycast(ray, out RaycastHit hit, _detectionRadius * 100f))
+                CurrentTarget = hit.collider.GetComponent<ITakeDamage>();
+        }
+
+        if (CurrentTarget != previous)
+        {
+            bool hasTarget = CurrentTarget != null;
+            Color color = hasTarget ? TargetColor : IdleColor;
+            if (_meshRenderer != null) _meshRenderer.material.color = color;
+            OnColorChanged?.Invoke(color);
+        }
     }
 
     private void HandleInput()
     {
 #if UNITY_EDITOR
         if (Input.GetMouseButtonDown(0))
-        {
             _lastScreenPos = Input.mousePosition;
-        }
         else if (Input.GetMouseButton(0))
         {
             Vector2 current = Input.mousePosition;
@@ -75,11 +90,8 @@ public class CrosshairController : MonoBehaviour
         if (Input.touchCount > 0)
         {
             Touch touch = Input.touches[Input.touchCount - 1];
-
             if (touch.phase == TouchPhase.Began)
-            {
                 _lastScreenPos = touch.position;
-            }
             else if (touch.phase == TouchPhase.Moved || touch.phase == TouchPhase.Stationary)
             {
                 MoveByDelta(touch.position - _lastScreenPos);
@@ -103,13 +115,17 @@ public class CrosshairController : MonoBehaviour
         _targetPosition.y = _worldY;
 
         if (!_useSmoothing)
+        {
             transform.position = _targetPosition;
+            ScreenPosition = _lastScreenPos;
+        }
     }
 
     private void ApplySmoothing()
     {
         if (!_useSmoothing) return;
         transform.position = Vector3.Lerp(transform.position, _targetPosition, _smoothSpeed * Time.deltaTime);
+        ScreenPosition = _camera.WorldToScreenPoint(transform.position);
     }
 
     private Vector3 ScreenToWorld(Vector2 screenPos)
@@ -121,8 +137,34 @@ public class CrosshairController : MonoBehaviour
 
     private void OnDrawGizmosSelected()
     {
+        // Bounds
         Gizmos.color = Color.yellow;
-        Vector3 gizmoSize = new(_boundsSize.x, 0.1f, _boundsSize.z);
-        Gizmos.DrawWireCube(_boundsCenter, gizmoSize);
+        Gizmos.DrawWireCube(_boundsCenter, new Vector3(_boundsSize.x, 0.1f, _boundsSize.z));
+
+        // Crosshair position sphere + detection radius
+        Gizmos.color = CurrentTarget != null ? Color.red : Color.cyan;
+        Gizmos.DrawWireSphere(transform.position, _detectionRadius);
+        Gizmos.DrawSphere(transform.position, 0.3f);
+
+        // Ray from camera through screen position
+        if (_camera != null && Application.isPlaying && ScreenPosition != Vector2.zero)
+        {
+            Ray ray = _camera.ScreenPointToRay(ScreenPosition);
+            if (Physics.Raycast(ray, out RaycastHit hit, _detectionRadius * 100f))
+            {
+                // Hit an object — draw to hit point, mark it red
+                Gizmos.color = Color.red;
+                Gizmos.DrawLine(_camera.transform.position, hit.point);
+                Gizmos.DrawWireSphere(hit.point, 0.5f);
+            }
+            else if (_groundPlane.Raycast(ray, out float dist))
+            {
+                // No hit — draw to ground plane
+                Vector3 groundPoint = ray.GetPoint(dist);
+                Gizmos.color = Color.green;
+                Gizmos.DrawLine(_camera.transform.position, groundPoint);
+                Gizmos.DrawWireSphere(groundPoint, 0.2f);
+            }
+        }
     }
 }
