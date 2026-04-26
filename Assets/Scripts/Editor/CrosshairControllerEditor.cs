@@ -30,11 +30,8 @@ public class CrosshairControllerEditor : Editor
         }
 
         EditorGUILayout.Space();
-        EditorGUILayout.LabelField("Shooting", EditorStyles.boldLabel);
-        EditorGUILayout.PropertyField(serializedObject.FindProperty("_shootInterval"));
-        EditorGUILayout.PropertyField(serializedObject.FindProperty("_shootRadius"));
-        EditorGUILayout.PropertyField(serializedObject.FindProperty("_shootClip"));
-        EditorGUILayout.PropertyField(serializedObject.FindProperty("_shootEffect"));
+        EditorGUILayout.LabelField("Target Feedback", EditorStyles.boldLabel);
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("_crosshairRenderer"), new GUIContent("Crosshair Renderer"));
 
         serializedObject.ApplyModifiedProperties();
     }

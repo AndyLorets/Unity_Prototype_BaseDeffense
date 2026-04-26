@@ -5,6 +5,7 @@ public abstract class WeaponBase : MonoBehaviour
     [SerializeField] protected float _damageValue;
     [SerializeField] protected int _damgeIndex;
     [SerializeField] protected float _shootDelay;
+    [SerializeField] protected bool _universalDamage;
     [Space(5)]
     [SerializeField] private ParticleSystem _shootEffect;
     [SerializeField] private MeshRenderer _iconMR;
@@ -13,6 +14,8 @@ public abstract class WeaponBase : MonoBehaviour
 
     private TargetController _targetController;
     private ITakeDamage _takeDamage;
+
+    protected ITakeDamage GetCurrentTarget() => _takeDamage;
 
     protected virtual void Start()
     {
@@ -48,9 +51,21 @@ public abstract class WeaponBase : MonoBehaviour
     {
         if (_takeDamage == null) return;
 
-        ServiceLocator.GetService<AudioManager>().PlayOneShot(_audioEffect); 
+        ServiceLocator.GetService<AudioManager>().PlayOneShot(_audioEffect);
         _shootEffect.Play();
-        _takeDamage.TakeDamage(_damageValue, _damgeIndex);
+        int effectiveIndex = _universalDamage ? -1 : _damgeIndex;
+        _takeDamage.TakeDamage(_damageValue, effectiveIndex);
+    }
 
+    // Always fires effect/sound; deals damage only if target exists
+    protected void ShootAt(ITakeDamage target)
+    {
+        ServiceLocator.GetService<AudioManager>().PlayOneShot(_audioEffect);
+        _shootEffect.Play();
+
+        if (target == null) return;
+
+        int effectiveIndex = _universalDamage ? -1 : _damgeIndex;
+        target.TakeDamage(_damageValue, effectiveIndex);
     }
 }

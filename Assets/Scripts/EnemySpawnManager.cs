@@ -53,7 +53,7 @@ public class EnemysOnLine
                 enemyShip.transform.localPosition = new Vector3(_localPosX, 0,0);
                 enemyShip.transform.localEulerAngles = new Vector3(0, -90, 0);
                 enemyShip.gameObject.SetActive(false);
-                enemyShip.Construct(enemyMoveSpeed, Random.Range(0, IndexInfo.index_count));
+                enemyShip.Construct(enemyMoveSpeed, 0);
                 enemyShip.onDeath += OnEnemyDeath; 
                 _enemyList.Add(enemyShip);
             }
