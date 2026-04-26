@@ -6,11 +6,6 @@ public class TargetController : MonoBehaviour
 {
     [SerializeField] private IndexInfo _indexInfo; 
 
-    private const float radius = 20f;
-    private const float moveDuration = .1f;
-
-    private float _curentValueX;
-
     public Action<ITakeDamage> onTargetEnter;
     public Action onTargetExit;
 
@@ -28,9 +23,6 @@ public class TargetController : MonoBehaviour
     {
         onTargetEnter += AttackState;
         onTargetExit += IdleState;
-
-        SwipeController.onSwipeLeft += MoveLeft;
-        SwipeController.onSwipeRight += MoveRight;
     }
     private void OnDisable()
     {
@@ -48,31 +40,6 @@ public class TargetController : MonoBehaviour
     {
         IdleState(); 
     }
-    private void MoveLeft()
-    {
-        if (_curentValueX <= -radius) return;
-
-        ServiceLocator.GetService<AudioManager>().PlayTargetAudio();
-
-        float endValue = _curentValueX - radius;
-        _curentValueX = endValue;
-        transform.DOKill(); 
-        transform.DOMoveX(endValue, moveDuration)
-            .SetEase(Ease.Linear);
-    }
-    private void MoveRight()
-    {
-        if (_curentValueX >= radius) return;
-
-        ServiceLocator.GetService<AudioManager>().PlayTargetAudio();
-
-        float endValue = _curentValueX + radius;
-        _curentValueX = endValue;
-        transform.DOKill();
-        transform.DOMoveX(endValue, moveDuration)
-            .SetEase(Ease.Linear);
-    }
-
     private void OnTriggerEnter(Collider other)
     {
         ITakeDamage takeDamage = other.GetComponent<ITakeDamage>();

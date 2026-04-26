@@ -36,7 +36,9 @@ public abstract class EnemyShipBase : MonoBehaviour, ITakeDamage
     }
     public void TakeDamage(float value, int index)
     {
-        value = index == this.index ? value : value * .2f;
+        // index -1 = universal damage (crosshair weapon), bypasses color matching
+        if (index != -1)
+            value = index == this.index ? value : value * .2f;
         _hp -= value;
 
         if (_hp <= 0) 

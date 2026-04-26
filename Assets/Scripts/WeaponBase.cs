@@ -53,8 +53,4 @@ public abstract class WeaponBase : MonoBehaviour
         _takeDamage.TakeDamage(_damageValue, _damgeIndex);
 
     }
-    private void OnMouseDown()
-    {
-        Shoot();
-    }
 }

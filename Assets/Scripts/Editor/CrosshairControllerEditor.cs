@@ -1,0 +1,41 @@
+using UnityEditor;
+using UnityEngine;
+
+[CustomEditor(typeof(CrosshairController))]
+[CanEditMultipleObjects]
+public class CrosshairControllerEditor : Editor
+{
+    public override void OnInspectorGUI()
+    {
+        serializedObject.Update();
+
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("_camera"));
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("_worldY"));
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("_sensitivity"));
+
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Bounds", EditorStyles.boldLabel);
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("_boundsCenter"));
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("_boundsSize"));
+
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Smoothing", EditorStyles.boldLabel);
+        SerializedProperty useSmoothing = serializedObject.FindProperty("_useSmoothing");
+        EditorGUILayout.PropertyField(useSmoothing, new GUIContent("Use Smoothing"));
+        if (useSmoothing.boolValue)
+        {
+            EditorGUI.indentLevel++;
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("_smoothSpeed"), new GUIContent("Smooth Speed"));
+            EditorGUI.indentLevel--;
+        }
+
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Shooting", EditorStyles.boldLabel);
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("_shootInterval"));
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("_shootRadius"));
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("_shootClip"));
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("_shootEffect"));
+
+        serializedObject.ApplyModifiedProperties();
+    }
+}
