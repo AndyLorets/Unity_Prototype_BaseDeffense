@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**BaseDeffense** — мобильная игра на Unity 6 (6000.4.2f1) в жанре tower defense. Игрок защищает базу от волн цветных врагов. Движение управляется свайпами, урон зависит от совпадения цвета оружия и врага.
+**BaseDeffense** — мобильная игра на Unity 6 (6000.4.2f1) в жанре tower defense. Игрок защищает базу от волн цветных врагов. Управление — кроссхейр (свайп/мышь), урон зависит от совпадения цвета оружия и врага.
 
 ## Unity Version & Build
 
@@ -24,7 +24,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Object Pool** — `EnemySpawnManager` заранее создаёт по 10 копий каждого врага на каждой линии. Мёртвые враги деактивируются и возвращаются в пул через `OnEnemyDeath`.
 
 **Observer (Action events)** — весь игровой поток строится на событиях:
-- `SwipeController.onSwipeLeft/Right` → движение `TargetController`
+- `CrosshairController.OnColorChanged` → UI кроссхейра меняет цвет (белый/красный)
 - `TargetController.onTargetEnter/Exit` → оружия начинают/прекращают стрельбу
 - `ScoreManager.onScoreChange` → `ScoreView` обновляет UI
 
@@ -35,7 +35,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Поток игры
 
 ```
-SwipeController → TargetController.MoveLeft/Right
+CrosshairController (свайп/мышь) → двигает 3D-кроссхейр по плоскости worldY
+CrosshairController.UpdateTarget → raycast вниз (3D) или через экран (2D) → ITakeDamage
+CrosshairController.OnColorChanged → UI меняет цвет (белый = нет цели, красный = цель)
 EnemySpawnManager → активирует врага из пула каждые 2 сек
 Враг движется Vector3.right → входит в триггер TargetController
 TargetController.onTargetEnter → WeaponBase.Shoot() (через OnMouseDown или автоматически)
@@ -51,6 +53,7 @@ Assets/Scripts/
 ├── Enemy/
 │   ├── EnemyShipBase.cs               # Абстрактный враг: движение, HP, смерть, пул
 │   └── EnemyShip.cs                   # Конкретный тип (заготовка для расширения)
+├── CrosshairController.cs             # Кроссхейр: движение, raycast, цвет, CurrentTarget
 ├── TargetController.cs                # База игрока: движение, AttackState/IdleState
 ├── WeaponBase.cs                      # Абстрактное оружие: прицеливание, выстрел, индекс
 ├── WeaponTurel.cs                     # Конкретное оружие (наследует WeaponBase)
@@ -77,3 +80,4 @@ Assets/Scripts/
 - **Новое оружие** → наследуй `WeaponBase`, реализуй `Reload()`
 - **Новый тип урона** → добавь цвет в `IndexInfo` ScriptableObject и обнови логику в `ITakeDamage`
 - **Аудио** → добавляй через `AudioManager`, получай через `ServiceLocator.GetService<AudioManager>()`
+- **Режим кроссхейра** → `GameSettings.CrosshairMode`: `World3D` (raycast вниз с офсетом) или `Screen2D` (raycast через экранные координаты)

@@ -1208,6 +1208,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: _Turel_01
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 43a1a14246096214b9fbf46aad71ccc3, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
@@ -2756,7 +2760,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _damageValue: 100
-  _damgeIndex: 1
+  _damgeIndex: 0
   _shootDelay: 1
   _universalDamage: 1
   _shootEffect: {fileID: 175950239}
@@ -3058,6 +3062,10 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: 0b3e02d6547546a438e4d35598f18c84, type: 3}
       propertyPath: m_Name
       value: _Turel_03
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 0b3e02d6547546a438e4d35598f18c84, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -4895,11 +4903,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.ToggleGroup
   m_AllowSwitchOff: 0
---- !u!1 &1485396731 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 5862374361461097758, guid: 49c6031e63ad224498ea392359a8a1b9, type: 3}
+--- !u!114 &1485396733 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 9066300102548091323, guid: 49c6031e63ad224498ea392359a8a1b9, type: 3}
   m_PrefabInstance: {fileID: 1561466904311719442}
   m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 26f28e9938bb38943a340c223d72aac8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &1555646675
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6494,7 +6508,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShootButton
   _turrets:
-  - {fileID: 814056823}
+  - {fileID: 1485396733}
 --- !u!114 &1935017062
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6539,9 +6553,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1485396731}
+      - m_Target: {fileID: 1935017061}
         m_TargetAssemblyTypeName: ShootButton, Assembly-CSharp
-        m_MethodName: 
+        m_MethodName: OnPress
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -6630,7 +6644,7 @@ Transform:
   m_GameObject: {fileID: 1941825538}
   serializedVersion: 2
   m_LocalRotation: {x: 0.70036197, y: 0.09743245, z: -0.09743245, w: 0.70036197}
-  m_LocalPosition: {x: 0, y: 0.55, z: -100}
+  m_LocalPosition: {x: 0, y: 3, z: -100}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -6650,10 +6664,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CrosshairController
   _camera: {fileID: 963194227}
-  _worldY: 0.55
+  _worldY: 3
   _sensitivity: 0.05
   _boundsCenter: {x: 0, y: 0, z: 45}
   _boundsSize: {x: 100, y: 0, z: 380}
+  _targetOffset: {x: 0, y: 50, z: 0}
   _useSmoothing: 1
   _smoothSpeed: 12
   _meshRenderer: {fileID: 1903807590}
@@ -7101,6 +7116,10 @@ PrefabInstance:
     - target: {fileID: 9066300102548091323, guid: 49c6031e63ad224498ea392359a8a1b9, type: 3}
       propertyPath: _shootMode
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9066300102548091323, guid: 49c6031e63ad224498ea392359a8a1b9, type: 3}
+      propertyPath: _damgeIndex
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 9066300102548091323, guid: 49c6031e63ad224498ea392359a8a1b9, type: 3}
       propertyPath: _audioEffect
