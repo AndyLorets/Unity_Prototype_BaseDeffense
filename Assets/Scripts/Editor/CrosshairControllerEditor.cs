@@ -32,6 +32,7 @@ public class CrosshairControllerEditor : Editor
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Target Detection", EditorStyles.boldLabel);
         EditorGUILayout.PropertyField(serializedObject.FindProperty("_detectionRadius"), new GUIContent("Detection Radius"));
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("_targetOffset"), new GUIContent("Target Offset (3D only)"));
 
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Visuals", EditorStyles.boldLabel);

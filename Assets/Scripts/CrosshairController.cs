@@ -8,6 +8,7 @@ public class CrosshairController : MonoBehaviour
     [SerializeField] private float _sensitivity = 0.05f;
     [SerializeField] private Vector3 _boundsCenter = Vector3.zero;
     [SerializeField] private Vector3 _boundsSize = new(20f, 0f, 20f);
+    [SerializeField] private Vector3 _targetOffset = Vector3.up * 10f;
     [SerializeField] internal bool _useSmoothing = false;
     [SerializeField] internal float _smoothSpeed = 10f;
     [SerializeField] private MeshRenderer _meshRenderer;
@@ -61,7 +62,7 @@ public class CrosshairController : MonoBehaviour
 
         if (_camera != null && ScreenPosition != Vector2.zero)
         {
-            Ray ray = _camera.ScreenPointToRay(ScreenPosition);
+            Ray ray = !Is3DMode ?_camera.ScreenPointToRay(ScreenPosition) : new Ray(transform.position + _targetOffset, Vector3.down);
             if (Physics.Raycast(ray, out RaycastHit hit, _detectionRadius * 100f))
                 CurrentTarget = hit.collider.GetComponent<ITakeDamage>();
         }
@@ -105,8 +106,8 @@ public class CrosshairController : MonoBehaviour
     {
         if (screenDelta.sqrMagnitude < 0.01f) return;
 
-        Vector3 from = ScreenToWorld(_lastScreenPos - screenDelta);
-        Vector3 to   = ScreenToWorld(_lastScreenPos);
+        Vector3 from = ScreenToWorld(_lastScreenPos);
+        Vector3 to   = ScreenToWorld(_lastScreenPos + screenDelta);
         Vector3 worldDelta = (to - from) * _sensitivity * 100f;
 
         _targetPosition += worldDelta;
@@ -149,20 +150,18 @@ public class CrosshairController : MonoBehaviour
         // Ray from camera through screen position
         if (_camera != null && Application.isPlaying && ScreenPosition != Vector2.zero)
         {
-            Ray ray = _camera.ScreenPointToRay(ScreenPosition);
+            Ray ray = !Is3DMode ?_camera.ScreenPointToRay(ScreenPosition) : new Ray(transform.position + _targetOffset, Vector3.down);
             if (Physics.Raycast(ray, out RaycastHit hit, _detectionRadius * 100f))
             {
-                // Hit an object — draw to hit point, mark it red
                 Gizmos.color = Color.red;
-                Gizmos.DrawLine(_camera.transform.position, hit.point);
+                Gizmos.DrawLine(ray.origin, hit.point);
                 Gizmos.DrawWireSphere(hit.point, 0.5f);
             }
             else if (_groundPlane.Raycast(ray, out float dist))
             {
-                // No hit — draw to ground plane
                 Vector3 groundPoint = ray.GetPoint(dist);
                 Gizmos.color = Color.green;
-                Gizmos.DrawLine(_camera.transform.position, groundPoint);
+                Gizmos.DrawLine(ray.origin, groundPoint);
                 Gizmos.DrawWireSphere(groundPoint, 0.2f);
             }
         }
