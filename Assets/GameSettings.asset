@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 428d772562e2c2847a1b970f12a865f2, type: 3}
   m_Name: GameSettings
   m_EditorClassIdentifier: Assembly-CSharp::GameSettings
-  crosshairMode: 0
+  crosshairMode: 1
