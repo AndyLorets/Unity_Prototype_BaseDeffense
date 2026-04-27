@@ -5,7 +5,7 @@ public class CrosshairController : MonoBehaviour
 {
     [SerializeField] private Camera _camera;
     [SerializeField] private float _worldY = 0f;
-    [SerializeField] private float _sensitivity = 0.05f;
+    [SerializeField] internal float _sensitivity = 0.05f;
     [SerializeField] private Vector3 _boundsCenter = Vector3.zero;
     [SerializeField] private Vector3 _boundsSize = new(20f, 0f, 20f);
     [SerializeField] private Vector3 _targetOffset = Vector3.up * 10f;
@@ -13,7 +13,7 @@ public class CrosshairController : MonoBehaviour
     [SerializeField] internal float _smoothSpeed = 10f;
     [SerializeField] private MeshRenderer _meshRenderer;
     [SerializeField] private GameSettings _settings;
-    [SerializeField] private float _detectionRadius = 1.5f;
+    [SerializeField] internal float _detectionRadius = 1.5f;
 
     public static readonly Color IdleColor = Color.white;
     public static readonly Color TargetColor = Color.red;
