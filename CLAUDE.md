@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**BaseDeffense** — мобильная игра на Unity 6 (6000.4.2f1) в жанре tower defense. Игрок защищает базу от волн цветных врагов. Управление — кроссхейр (свайп/мышь), урон зависит от совпадения цвета оружия и врага.
+**BaseDeffense** — мобильная игра на Unity 6 (6000.4.4f1) в жанре tower defense. Игрок защищает базу от волн цветных врагов. Управление — два джойстика (по одному на каждую пушку), каждый управляет своим прицелом. Урон зависит от совпадения цвета оружия и врага.
 
 ## Unity Version & Build
 
-- Unity **6000.4.2f1** (Unity 6.0.4)
+- Unity **6000.4.4f1** (Unity 6.0.4)
 - Открывать через Unity Hub — стандартный билд через **File → Build Settings**
 - Сцены: `MenuScene` (index 0), `GameScene` (index 1)
 - Таргет-платформа: мобильные устройства (Android/iOS)
@@ -28,6 +28,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `TargetController.onTargetEnter/Exit` → оружия начинают/прекращают стрельбу
 - `ScoreManager.onScoreChange` → `ScoreView` обновляет UI
 
+**Dual Joystick / Dual Crosshair** — два независимых джойстика привязаны к двум пушкам:
+- Каждый джойстик статичен и расположен прямо над своей пушкой (нижний левый / нижний правый угол экрана)
+- Джойстик активируется только при касании зоны своей пушки — не появляется в произвольном месте
+- Каждый джойстик управляет своим `CrosshairController` (два прицела в 3D-сцене)
+- Выстрел автоматический: как только прицел навёлся на цель, соответствующая пушка стреляет сама (без кнопок)
+
 ### Система урона (цветная механика)
 
 Каждый враг и оружие имеют `index` (0–3), которому соответствует цвет из `IndexInfo` (ScriptableObject). Полный урон наносится при совпадении индексов, 20% урона — при несовпадении. Это создаёт стратегическую глубину.
@@ -35,15 +41,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Поток игры
 
 ```
-CrosshairController (свайп/мышь) → двигает 3D-кроссхейр по плоскости worldY
-CrosshairController.UpdateTarget → raycast вниз (3D) или через экран (2D) → ITakeDamage
-CrosshairController.OnColorChanged → UI меняет цвет (белый = нет цели, красный = цель)
+Два джойстика (Left / Right) → каждый читает касания в своей зоне экрана
+Джойстик передаёт дельту → CrosshairController.MoveByDelta (левый/правый прицел)
+CrosshairController.UpdateTarget → raycast вниз (World3D) → ITakeDamage
+CrosshairController.OnColorChanged → UI прицела меняет цвет (белый = нет цели, красный = цель)
+WeaponTurel (Auto) → как только CrosshairController.CurrentTarget != null → Shoot()
 EnemySpawnManager → активирует врага из пула каждые 2 сек
 Враг движется Vector3.right → входит в триггер TargetController
-TargetController.onTargetEnter → WeaponBase.Shoot() (через OnMouseDown или автоматически)
 Враг.TakeDamage() → смерть: +5 очков, эффект, пересоздание через 3 сек
 Враг достигает Tags.Basa → -10 очков, сброс в пул
 ```
+
+### Расположение пушек и джойстиков
+
+```
+Вид экрана (портрет / ландшафт):
+  [  Игровая сцена (камера)                    ]
+  [ Левая пушка       |||       Правая пушка   ]  ← пушки у базы, нижняя часть экрана
+  [ [JoyL]                           [JoyR]   ]  ← джойстики над пушками, большие пальцы
+```
+
+- Пушки стоят симметрично относительно базы на уровне земли
+- Джойстики — статичные UI-элементы (Canvas), каждый в своём углу нижней части экрана
+- Касание вне зоны джойстика игнорируется (нет floating joystick)
 
 ### Структура скриптов
 
@@ -51,17 +71,18 @@ TargetController.onTargetEnter → WeaponBase.Shoot() (через OnMouseDown и
 Assets/Scripts/
 ├── Infrastructure/ServiceLocator.cs   # Реестр сервисов
 ├── Enemy/
-│   ├── EnemyShipBase.cs               # Абстрактный враг: движение, HP, смерть, пул
+│   ├── EnemyShipBase.cs               # Абстрактный враг: движение, HP, смерть, пул; опционально — HealthBar
 │   └── EnemyShip.cs                   # Конкретный тип (заготовка для расширения)
-├── CrosshairController.cs             # Кроссхейр: движение, raycast, цвет, CurrentTarget
+├── CrosshairController.cs             # Кроссхейр: движение (через джойстик), raycast, цвет, CurrentTarget
 ├── TargetController.cs                # База игрока: движение, AttackState/IdleState
 ├── WeaponBase.cs                      # Абстрактное оружие: прицеливание, выстрел, индекс
-├── WeaponTurel.cs                     # Конкретное оружие (наследует WeaponBase)
+├── WeaponTurel.cs                     # Конкретное оружие (Auto-режим: стреляет при CurrentTarget != null)
+├── DualJoystickController.cs          # (новый) Статичные левый/правый джойстик; передаёт дельту в CrosshairController
 ├── EnemySpawnManager.cs               # Пул врагов, спавн по линиям
 ├── AudioManager.cs                    # Сервис звука (gun, target, explosion)
 ├── ScoreManager.cs                    # Статический счёт + события
 ├── ScoreView.cs                       # UI счёта с DOTween анимациями
-├── SwipeController.cs                 # Обработка свайпов (IDragHandler)
+├── SwipeController.cs                 # (устарел) Старый свайп-контроллер — заменён DualJoystickController
 ├── IndexInfo.cs                       # ScriptableObject: 4 цвета по индексу
 ├── ITakeDamage.cs                     # Интерфейс: index + TakeDamage(value, index)
 ├── GameManager.cs                     # Framerate (60 FPS), перезапуск → сцена 0
@@ -81,3 +102,16 @@ Assets/Scripts/
 - **Новый тип урона** → добавь цвет в `IndexInfo` ScriptableObject и обнови логику в `ITakeDamage`
 - **Аудио** → добавляй через `AudioManager`, получай через `ServiceLocator.GetService<AudioManager>()`
 - **Режим кроссхейра** → `GameSettings.CrosshairMode`: `World3D` (raycast вниз с офсетом) или `Screen2D` (raycast через экранные координаты)
+
+## Изменения (v2 — Dual Joystick)
+
+### Убрано
+- Кнопки ручного выстрела (`ShootMode.Button`, `ManualShoot()` в `WeaponTurel`) — больше не используются
+- Одиночный свайп-контроллер (`SwipeController.cs`) — заменён двойным джойстиком
+
+### Добавлено / изменено
+- **`DualJoystickController`** — новый скрипт; два статичных круглых джойстика на Canvas (левый / правый), каждый привязан к своему `CrosshairController`; зона касания фиксирована, floating-джойстик не используется
+- **`CrosshairController`** — убрана внутренняя обработка свайпов/тачей; вместо этого принимает дельту извне через публичный метод `ApplyJoystickDelta(Vector2 delta)`
+- **`WeaponTurel`** — оставлен только `ShootMode.Auto`; стреляет в `AutoShootLoop` при `CurrentTarget != null`
+- **Две пушки** на сцене, симметрично у базы; каждая ссылается на свой `CrosshairController`
+- **Health bar (опционально)** — World Space Canvas над врагом, Image с `fillAmount` = `_hp / maxHp`; обновляется в `TakeDamage`; реализован в `EnemyShipBase` через `[SerializeField] private Image _healthBar`

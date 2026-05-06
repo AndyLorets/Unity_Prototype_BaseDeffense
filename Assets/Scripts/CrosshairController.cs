@@ -28,6 +28,7 @@ public class CrosshairController : MonoBehaviour
     private Vector2 _lastScreenPos;
     private Plane _groundPlane;
     private Vector3 _targetPosition;
+    private int _activeFingerId = -1;
 
     private Vector3 Min => _boundsCenter - _boundsSize * 0.5f;
     private Vector3 Max => _boundsCenter + _boundsSize * 0.5f;
@@ -88,15 +89,25 @@ public class CrosshairController : MonoBehaviour
             _lastScreenPos = current;
         }
 #else
-        if (Input.touchCount > 0)
+        for (int i = 0; i < Input.touchCount; i++)
         {
-            Touch touch = Input.touches[Input.touchCount - 1];
-            if (touch.phase == TouchPhase.Began)
-                _lastScreenPos = touch.position;
-            else if (touch.phase == TouchPhase.Moved || touch.phase == TouchPhase.Stationary)
+            Touch touch = Input.touches[i];
+            if (_activeFingerId == -1 && touch.phase == TouchPhase.Began)
             {
-                MoveByDelta(touch.position - _lastScreenPos);
+                _activeFingerId = touch.fingerId;
                 _lastScreenPos = touch.position;
+            }
+            else if (touch.fingerId == _activeFingerId)
+            {
+                if (touch.phase == TouchPhase.Moved || touch.phase == TouchPhase.Stationary)
+                {
+                    MoveByDelta(touch.position - _lastScreenPos);
+                    _lastScreenPos = touch.position;
+                }
+                else if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
+                {
+                    _activeFingerId = -1;
+                }
             }
         }
 #endif
