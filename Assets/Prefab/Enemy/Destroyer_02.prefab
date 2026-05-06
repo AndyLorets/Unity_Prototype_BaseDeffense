@@ -312,3 +312,4 @@ MonoBehaviour:
   _indexInfo: {fileID: 11400000, guid: 0115e541b2fe28244bb290a0befb5521, type: 2}
   _meshRenderer: {fileID: 7247154295842480457}
   _deathEffect: {fileID: 363091108462685126}
+  _healthBarOffset: {x: 0, y: 5, z: 0}

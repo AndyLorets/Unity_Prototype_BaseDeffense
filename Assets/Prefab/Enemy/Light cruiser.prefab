@@ -240,6 +240,7 @@ MonoBehaviour:
   _indexInfo: {fileID: 11400000, guid: 0115e541b2fe28244bb290a0befb5521, type: 2}
   _meshRenderer: {fileID: 3568591066589310785}
   _deathEffect: {fileID: 9088867984394402422}
+  _healthBarOffset: {x: 0, y: 5, z: 0}
 --- !u!4 &6704845795818250844 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 555d5ef2fc442dc46a42157da016e07e, type: 3}

@@ -23,8 +23,8 @@ public class DualJoystickController : MonoBehaviour
     [SerializeField] private FixedJoystick _rightFixedJoystick;
 
     [Header("Delta mode")]
-    [SerializeField] private FloatingJoystick _leftFloatingJoystick;
-    [SerializeField] private FloatingJoystick _rightFloatingJoystick;
+    [SerializeField] private VariableJoystick _leftFloatingJoystick;
+    [SerializeField] private VariableJoystick _rightFloatingJoystick;
     [SerializeField] private float _deltaScale = 1f;
 
     private int _leftFingerId = -1;

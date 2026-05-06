@@ -15,7 +15,7 @@ public class VariableJoystick : Joystick
     public void SetMode(JoystickType joystickType)
     {
         this.joystickType = joystickType;
-        if(joystickType == JoystickType.Fixed)
+        if(joystickType == JoystickType.Fixed || joystickType == JoystickType.DynamicVisible)
         {
             background.anchoredPosition = fixedPosition;
             background.gameObject.SetActive(true);
@@ -33,7 +33,7 @@ public class VariableJoystick : Joystick
 
     public override void OnPointerDown(PointerEventData eventData)
     {
-        if(joystickType != JoystickType.Fixed)
+        if(joystickType == JoystickType.Floating || joystickType == JoystickType.Dynamic)
         {
             background.anchoredPosition = ScreenPointToAnchoredPosition(eventData.position);
             background.gameObject.SetActive(true);
@@ -43,15 +43,18 @@ public class VariableJoystick : Joystick
 
     public override void OnPointerUp(PointerEventData eventData)
     {
-        if(joystickType != JoystickType.Fixed)
+        if(joystickType == JoystickType.Floating || joystickType == JoystickType.Dynamic)
             background.gameObject.SetActive(false);
+        else if(joystickType == JoystickType.DynamicVisible)
+            background.anchoredPosition = fixedPosition;
 
         base.OnPointerUp(eventData);
     }
 
     protected override void HandleInput(float magnitude, Vector2 normalised, Vector2 radius, Camera cam)
     {
-        if (joystickType == JoystickType.Dynamic && magnitude > moveThreshold)
+        if ((joystickType == JoystickType.Dynamic || joystickType == JoystickType.DynamicVisible)
+            && magnitude > moveThreshold)
         {
             Vector2 difference = normalised * (magnitude - moveThreshold) * radius;
             background.anchoredPosition += difference;
@@ -60,4 +63,4 @@ public class VariableJoystick : Joystick
     }
 }
 
-public enum JoystickType { Fixed, Floating, Dynamic }
+public enum JoystickType { Fixed, Floating, Dynamic, DynamicVisible }

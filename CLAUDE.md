@@ -21,7 +21,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **StaticSingleton** — `ScoreManager` хранит счёт статически и уведомляет подписчиков через `Action onScoreChange`.
 
-**Object Pool** — `EnemySpawnManager` заранее создаёт по 10 копий каждого врага на каждой линии. Мёртвые враги деактивируются и возвращаются в пул через `OnEnemyDeath`.
+**Object Pool** — два независимых пула:
+- `EnemySpawnManager` заранее создаёт по 10 копий каждого врага на каждой линии. Мёртвые враги деактивируются и возвращаются в пул через `OnEnemyDeath`.
+- `HealthBarPool` (UI) заранее создаёт N экземпляров `HealthBarUI` на Canvas. Враг при `OnEnable` берёт бар через `ServiceLocator.GetService<HealthBarPool>().Get(transform, offset)`, при `OnDisable`/`Death` возвращает через `Release`.
 
 **Observer (Action events)** — весь игровой поток строится на событиях:
 - `CrosshairController.OnColorChanged` → UI кроссхейра меняет цвет (белый/красный)
@@ -38,7 +40,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Два режима управления (`InputMode` enum в `DualJoystickController`):**
 
 `Delta` — дельта позиции пальца (как старый свайп):
-- Визуал: `FloatingJoystick` появляется в точке касания, но зона касания фиксирована (левая/правая половина экрана)
+- Визуал: `VariableJoystick` (рекомендуемый режим `DynamicVisible` — фон всегда виден на месте, тянется за пальцем после `MoveThreshold`, возвращается на исходную позицию при отпускании). Зона касания фиксирована (левая/правая половина экрана)
 - Логика: дельта пикселей → `ScreenToWorld` → смещение прицела; ощущение 1-в-1 как текущий свайп
 - Плюс: привычно, точно; минус: неудобно при больших thumb-зонах
 
@@ -84,13 +86,16 @@ EnemySpawnManager → активирует врага из пула каждые
 Assets/Scripts/
 ├── Infrastructure/ServiceLocator.cs   # Реестр сервисов
 ├── Enemy/
-│   ├── EnemyShipBase.cs               # Абстрактный враг: движение, HP, смерть, пул; опционально — HealthBar
+│   ├── EnemyShipBase.cs               # Абстрактный враг: движение, HP, смерть, пул; запрос HealthBar из пула
 │   └── EnemyShip.cs                   # Конкретный тип (заготовка для расширения)
+├── UI/
+│   ├── HealthBarUI.cs                 # UI-полоска HP: WorldToScreenPoint follow, DOFillAmount анимация
+│   └── HealthBarPool.cs               # Pool HealthBarUI на Canvas; регистрируется в ServiceLocator
 ├── CrosshairController.cs             # Кроссхейр: движение (через джойстик), raycast, цвет, CurrentTarget
 ├── TargetController.cs                # База игрока: движение, AttackState/IdleState
 ├── WeaponBase.cs                      # Абстрактное оружие: прицеливание, выстрел, индекс
 ├── WeaponTurel.cs                     # Конкретное оружие (Auto-режим: стреляет при CurrentTarget != null)
-├── DualJoystickController.cs          # (новый) Статичные левый/правый джойстик; передаёт дельту в CrosshairController
+├── DualJoystickController.cs          # Статичные левый/правый джойстик; передаёт дельту в CrosshairController
 ├── EnemySpawnManager.cs               # Пул врагов, спавн по линиям
 ├── AudioManager.cs                    # Сервис звука (gun, target, explosion)
 ├── ScoreManager.cs                    # Статический счёт + события
@@ -106,7 +111,11 @@ Assets/Scripts/
 
 - **DOTween** — все анимации (движение, масштаб, цвет). Пространство имён `DG.Tweening`.
 - **TextMeshPro** — UI текст.
-- **Joystick Pack** — `FixedJoystick` (статичный стик, Velocity-режим) и `FloatingJoystick` (появляется в точке касания, используется как визуал в Delta-режиме).
+- **Joystick Pack** — `FixedJoystick` (статичный стик, Velocity-режим) и `VariableJoystick` (используется в Delta-режиме). `VariableJoystick` поддерживает четыре подрежима через `JoystickType`:
+  - `Fixed` — фон закреплён, handle отклоняется от центра
+  - `Floating` — фон скрыт, появляется в точке касания
+  - `Dynamic` — как `Floating`, но фон тянется за пальцем после `MoveThreshold`
+  - `DynamicVisible` (наш кастомный) — фон всегда виден на стартовой позиции, тянется за пальцем после `MoveThreshold`, возвращается на место при отпускании
 
 ## Расширение игры
 
@@ -124,7 +133,7 @@ Assets/Scripts/
 
 ### Добавлено / изменено
 - **`DualJoystickController`** — новый скрипт; два джойстика на Canvas (левый / правый), каждый привязан к своему `CrosshairController`; переключаемый `InputMode` в инспекторе:
-  - `Delta`: использует `FloatingJoystick` с фиксированной зоной касания (левая/правая половина экрана); дельта пикселей → `ScreenToWorld`
+  - `Delta`: использует `VariableJoystick` (рекомендуется `DynamicVisible`) с фиксированной зоной касания (левая/правая половина экрана); дельта пикселей → `ScreenToWorld`
   - `Velocity`: использует `FixedJoystick`; `Direction * speed * deltaTime` → смещение прицела
 - **`CrosshairController`** — убрана внутренняя обработка свайпов/тачей; принимает ввод извне через `ApplyDelta(Vector2 screenDelta)` (Delta-режим) и `ApplyVelocity(Vector2 direction)` (Velocity-режим)
 - **`WeaponTurel`** — оставлен только `ShootMode.Auto`; стреляет в `AutoShootLoop` при `CurrentTarget != null`
