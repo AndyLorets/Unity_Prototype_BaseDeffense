@@ -1,12 +1,15 @@
 using DG.Tweening;
 using UnityEngine;
+using UnityEngine.UI;
 
 public abstract class EnemyShipBase : MonoBehaviour, ITakeDamage
 {
     public int index { get; private set; }
     public float moveSpeed { get; private set; }
 
-    private float _hp = 100f;
+    private const float MaxHp = 100f;
+
+    private float _hp = MaxHp;
     private bool _isDead;
 
     protected Rigidbody _rb;
@@ -15,6 +18,7 @@ public abstract class EnemyShipBase : MonoBehaviour, ITakeDamage
     [SerializeField] private IndexInfo _indexInfo;
     [SerializeField] private MeshRenderer _meshRenderer;
     [SerializeField] private ParticleSystem _deathEffect;
+    [SerializeField] private Image _healthBar;
 
     private Vector3 _deathEffectPos; 
     public System.Action<EnemyShipBase> onDeath; 
@@ -41,8 +45,16 @@ public abstract class EnemyShipBase : MonoBehaviour, ITakeDamage
             value = index == this.index ? value : value * .2f;
         _hp -= value;
 
-        if (_hp <= 0) 
+        UpdateHealthBar();
+
+        if (_hp <= 0)
             Invoke(nameof(Death), .5f);
+    }
+
+    private void UpdateHealthBar()
+    {
+        if (_healthBar == null) return;
+        _healthBar.fillAmount = Mathf.Clamp01(_hp / MaxHp);
     }
 
     protected virtual void Death()
@@ -75,11 +87,13 @@ public abstract class EnemyShipBase : MonoBehaviour, ITakeDamage
     {
         gameObject.SetActive(false);
 
-        _hp = 100f;
+        _hp = MaxHp;
+        _isDead = false;
+        UpdateHealthBar();
         _rb.constraints = RigidbodyConstraints.FreezeAll;
         _coll.enabled = true;
         _deathEffect.transform.parent = transform;
-        _deathEffect.transform.position = _deathEffectPos; 
+        _deathEffect.transform.position = _deathEffectPos;
     }
 
     private void OnCollisionEnter(Collision collision)

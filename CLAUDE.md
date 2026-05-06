@@ -33,6 +33,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Джойстик активируется только при касании зоны своей пушки — не появляется в произвольном месте
 - Каждый джойстик управляет своим `CrosshairController` (два прицела в 3D-сцене)
 - Выстрел автоматический: как только прицел навёлся на цель, соответствующая пушка стреляет сама (без кнопок)
+- Два режима управления переключаются через `InputMode` в инспекторе (см. ниже)
+
+**Два режима управления (`InputMode` enum в `DualJoystickController`):**
+
+`Delta` — дельта позиции пальца (как старый свайп):
+- Визуал: `FloatingJoystick` появляется в точке касания, но зона касания фиксирована (левая/правая половина экрана)
+- Логика: дельта пикселей → `ScreenToWorld` → смещение прицела; ощущение 1-в-1 как текущий свайп
+- Плюс: привычно, точно; минус: неудобно при больших thumb-зонах
+
+`Velocity` — отклонение стика (`FixedJoystick.Direction`):
+- Визуал: `FixedJoystick` — стик статичен, handle отклоняется от центра
+- Логика: `Direction * speed * deltaTime` → смещение прицела; держишь стик — прицел едет
+- Плюс: аркадно, удобно на мобильном; минус: требует настройки `speed`
 
 ### Система урона (цветная механика)
 
@@ -93,7 +106,7 @@ Assets/Scripts/
 
 - **DOTween** — все анимации (движение, масштаб, цвет). Пространство имён `DG.Tweening`.
 - **TextMeshPro** — UI текст.
-- **Joystick Pack** — в проекте присутствует, но в текущих скриптах не используется активно.
+- **Joystick Pack** — `FixedJoystick` (статичный стик, Velocity-режим) и `FloatingJoystick` (появляется в точке касания, используется как визуал в Delta-режиме).
 
 ## Расширение игры
 
@@ -110,8 +123,10 @@ Assets/Scripts/
 - Одиночный свайп-контроллер (`SwipeController.cs`) — заменён двойным джойстиком
 
 ### Добавлено / изменено
-- **`DualJoystickController`** — новый скрипт; два статичных круглых джойстика на Canvas (левый / правый), каждый привязан к своему `CrosshairController`; зона касания фиксирована, floating-джойстик не используется
-- **`CrosshairController`** — убрана внутренняя обработка свайпов/тачей; вместо этого принимает дельту извне через публичный метод `ApplyJoystickDelta(Vector2 delta)`
+- **`DualJoystickController`** — новый скрипт; два джойстика на Canvas (левый / правый), каждый привязан к своему `CrosshairController`; переключаемый `InputMode` в инспекторе:
+  - `Delta`: использует `FloatingJoystick` с фиксированной зоной касания (левая/правая половина экрана); дельта пикселей → `ScreenToWorld`
+  - `Velocity`: использует `FixedJoystick`; `Direction * speed * deltaTime` → смещение прицела
+- **`CrosshairController`** — убрана внутренняя обработка свайпов/тачей; принимает ввод извне через `ApplyDelta(Vector2 screenDelta)` (Delta-режим) и `ApplyVelocity(Vector2 direction)` (Velocity-режим)
 - **`WeaponTurel`** — оставлен только `ShootMode.Auto`; стреляет в `AutoShootLoop` при `CurrentTarget != null`
 - **Две пушки** на сцене, симметрично у базы; каждая ссылается на свой `CrosshairController`
 - **Health bar (опционально)** — World Space Canvas над врагом, Image с `fillAmount` = `_hp / maxHp`; обновляется в `TakeDamage`; реализован в `EnemyShipBase` через `[SerializeField] private Image _healthBar`

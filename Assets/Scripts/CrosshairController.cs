@@ -3,9 +3,13 @@ using UnityEngine;
 
 public class CrosshairController : MonoBehaviour
 {
+    public enum ScreenSide { None, Left, Right }
+
     [SerializeField] private Camera _camera;
     [SerializeField] private float _worldY = 0f;
     [SerializeField] internal float _sensitivity = 0.05f;
+    [SerializeField] internal float _speed = 10f;
+    [SerializeField] private ScreenSide _side = ScreenSide.None;
     [SerializeField] private Vector3 _boundsCenter = Vector3.zero;
     [SerializeField] private Vector3 _boundsSize = new(20f, 0f, 20f);
     [SerializeField] private Vector3 _targetOffset = Vector3.up * 10f;
@@ -22,22 +26,37 @@ public class CrosshairController : MonoBehaviour
 
     public ITakeDamage CurrentTarget { get; private set; }
 
-    // Raw screen position of the crosshair — use this for UI to avoid perspective offset
     public Vector2 ScreenPosition { get; private set; }
 
-    private Vector2 _lastScreenPos;
     private Plane _groundPlane;
     private Vector3 _targetPosition;
-    private int _activeFingerId = -1;
 
-    private Vector3 Min => _boundsCenter - _boundsSize * 0.5f;
-    private Vector3 Max => _boundsCenter + _boundsSize * 0.5f;
+    private Vector3 Min
+    {
+        get
+        {
+            Vector3 m = _boundsCenter - _boundsSize * 0.5f;
+            if (_side == ScreenSide.Right) m.x = _boundsCenter.x;
+            return m;
+        }
+    }
+
+    private Vector3 Max
+    {
+        get
+        {
+            Vector3 m = _boundsCenter + _boundsSize * 0.5f;
+            if (_side == ScreenSide.Left) m.x = _boundsCenter.x;
+            return m;
+        }
+    }
 
     private void Awake()
     {
         if (_camera == null) _camera = Camera.main;
         _groundPlane = new Plane(Vector3.up, new Vector3(0f, _worldY, 0f));
         _targetPosition = transform.position;
+        ScreenPosition = _camera != null ? (Vector2)_camera.WorldToScreenPoint(transform.position) : Vector2.zero;
     }
 
     private bool Is3DMode => _settings == null || _settings.crosshairMode == GameSettings.CrosshairMode.World3D;
@@ -50,7 +69,6 @@ public class CrosshairController : MonoBehaviour
 
     private void Update()
     {
-        HandleInput();
         ApplySmoothing();
         UpdateTarget();
         ApplyRendererMode();
@@ -77,50 +95,31 @@ public class CrosshairController : MonoBehaviour
         }
     }
 
-    private void HandleInput()
-    {
-#if UNITY_EDITOR
-        if (Input.GetMouseButtonDown(0))
-            _lastScreenPos = Input.mousePosition;
-        else if (Input.GetMouseButton(0))
-        {
-            Vector2 current = Input.mousePosition;
-            MoveByDelta(current - _lastScreenPos);
-            _lastScreenPos = current;
-        }
-#else
-        for (int i = 0; i < Input.touchCount; i++)
-        {
-            Touch touch = Input.touches[i];
-            if (_activeFingerId == -1 && touch.phase == TouchPhase.Began)
-            {
-                _activeFingerId = touch.fingerId;
-                _lastScreenPos = touch.position;
-            }
-            else if (touch.fingerId == _activeFingerId)
-            {
-                if (touch.phase == TouchPhase.Moved || touch.phase == TouchPhase.Stationary)
-                {
-                    MoveByDelta(touch.position - _lastScreenPos);
-                    _lastScreenPos = touch.position;
-                }
-                else if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
-                {
-                    _activeFingerId = -1;
-                }
-            }
-        }
-#endif
-    }
-
-    private void MoveByDelta(Vector2 screenDelta)
+    public void ApplyDelta(Vector2 screenDelta)
     {
         if (screenDelta.sqrMagnitude < 0.01f) return;
 
-        Vector3 from = ScreenToWorld(_lastScreenPos);
-        Vector3 to   = ScreenToWorld(_lastScreenPos + screenDelta);
+        Vector2 baseScreenPos = ScreenPosition != Vector2.zero
+            ? ScreenPosition
+            : (Vector2)_camera.WorldToScreenPoint(_targetPosition);
+
+        Vector3 from = ScreenToWorld(baseScreenPos);
+        Vector3 to   = ScreenToWorld(baseScreenPos + screenDelta);
         Vector3 worldDelta = (to - from) * _sensitivity * 100f;
 
+        ApplyWorldDelta(worldDelta, baseScreenPos + screenDelta);
+    }
+
+    public void ApplyVelocity(Vector2 direction)
+    {
+        if (direction.sqrMagnitude < 0.0001f) return;
+
+        Vector3 worldDelta = new Vector3(direction.x, 0f, direction.y) * _speed * Time.deltaTime;
+        ApplyWorldDelta(worldDelta, _camera != null ? (Vector2)_camera.WorldToScreenPoint(_targetPosition + worldDelta) : ScreenPosition);
+    }
+
+    private void ApplyWorldDelta(Vector3 worldDelta, Vector2 newScreenPos)
+    {
         _targetPosition += worldDelta;
         _targetPosition.x = Mathf.Clamp(_targetPosition.x, Min.x, Max.x);
         _targetPosition.z = Mathf.Clamp(_targetPosition.z, Min.z, Max.z);
@@ -129,7 +128,7 @@ public class CrosshairController : MonoBehaviour
         if (!_useSmoothing)
         {
             transform.position = _targetPosition;
-            ScreenPosition = _lastScreenPos;
+            ScreenPosition = _camera != null ? (Vector2)_camera.WorldToScreenPoint(transform.position) : newScreenPos;
         }
     }
 
@@ -137,7 +136,8 @@ public class CrosshairController : MonoBehaviour
     {
         if (!_useSmoothing) return;
         transform.position = Vector3.Lerp(transform.position, _targetPosition, _smoothSpeed * Time.deltaTime);
-        ScreenPosition = _camera.WorldToScreenPoint(transform.position);
+        if (_camera != null)
+            ScreenPosition = _camera.WorldToScreenPoint(transform.position);
     }
 
     private Vector3 ScreenToWorld(Vector2 screenPos)
@@ -149,16 +149,13 @@ public class CrosshairController : MonoBehaviour
 
     private void OnDrawGizmosSelected()
     {
-        // Bounds
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireCube(_boundsCenter, new Vector3(_boundsSize.x, 0.1f, _boundsSize.z));
 
-        // Crosshair position sphere + detection radius
         Gizmos.color = CurrentTarget != null ? Color.red : Color.cyan;
         Gizmos.DrawWireSphere(transform.position, _detectionRadius);
         Gizmos.DrawSphere(transform.position, 0.3f);
 
-        // Ray from camera through screen position
         if (_camera != null && Application.isPlaying && ScreenPosition != Vector2.zero)
         {
             Ray ray = !Is3DMode ?_camera.ScreenPointToRay(ScreenPosition) : new Ray(transform.position + _targetOffset, Vector3.down);

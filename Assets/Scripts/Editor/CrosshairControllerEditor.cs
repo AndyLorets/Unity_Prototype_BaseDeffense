@@ -11,7 +11,11 @@ public class CrosshairControllerEditor : Editor
 
         EditorGUILayout.PropertyField(serializedObject.FindProperty("_camera"));
         EditorGUILayout.PropertyField(serializedObject.FindProperty("_worldY"));
-        EditorGUILayout.PropertyField(serializedObject.FindProperty("_sensitivity"));
+
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Input", EditorStyles.boldLabel);
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("_sensitivity"), new GUIContent("Sensitivity (Delta)"));
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("_speed"), new GUIContent("Speed (Velocity)"));
 
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Bounds", EditorStyles.boldLabel);
