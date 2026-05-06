@@ -138,4 +138,8 @@ Assets/Scripts/
 - **`CrosshairController`** — убрана внутренняя обработка свайпов/тачей; принимает ввод извне через `ApplyDelta(Vector2 screenDelta)` (Delta-режим) и `ApplyVelocity(Vector2 direction)` (Velocity-режим)
 - **`WeaponTurel`** — оставлен только `ShootMode.Auto`; стреляет в `AutoShootLoop` при `CurrentTarget != null`
 - **Две пушки** на сцене, симметрично у базы; каждая ссылается на свой `CrosshairController`
-- **Health bar (опционально)** — World Space Canvas над врагом, Image с `fillAmount` = `_hp / maxHp`; обновляется в `TakeDamage`; реализован в `EnemyShipBase` через `[SerializeField] private Image _healthBar`
+- **Health bar (v3 — UI Pool + DOTween)** — Screen Space Overlay Canvas, пул `HealthBarUI`-префабов:
+  - `HealthBarPool` (на Canvas, регистрируется в `ServiceLocator` в `Awake`) держит Stack свободных баров; `Get(target, offset)` / `Release(bar)`
+  - `HealthBarUI` следует за 3D-целью в `LateUpdate` через `Camera.WorldToScreenPoint` (камера кэшируется в пуле, не дёргаем `Camera.main` каждый кадр); прячется при `screenPos.z < 0`
+  - `UpdateHealth(current, max)` плавно тянет `Image.fillAmount` через `DOFillAmount` (настраиваемые `_tweenDuration`, `_tweenEase` в инспекторе); `SetHealthInstant` — без анимации (для первичной привязки/респавна)
+  - `EnemyShipBase` берёт бар в `OnEnable` (вызывает `SetHealthInstant`), возвращает в `OnDisable` и в `Death` (чтобы бар не висел во время 3-секундной задержки до `Reconstruct`); per-enemy `_healthBarOffset` в инспекторе
