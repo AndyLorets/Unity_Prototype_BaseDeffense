@@ -19,6 +19,9 @@ public class CrosshairController : MonoBehaviour
     [SerializeField] private GameSettings _settings;
     [SerializeField] internal float _detectionRadius = 1.5f;
 
+    [Header("Follow Target (Следование за игроком)")]
+    [SerializeField] private Transform _followTarget; // СЮДА НУЖНО ПЕРЕТАЩИТЬ ИГРОКА
+
     public static readonly Color IdleColor = Color.white;
     public static readonly Color TargetColor = Color.red;
 
@@ -30,6 +33,7 @@ public class CrosshairController : MonoBehaviour
 
     private Plane _groundPlane;
     private Vector3 _targetPosition;
+    private Vector3 _lastFollowPosition;
 
     private Vector3 Min
     {
@@ -57,6 +61,9 @@ public class CrosshairController : MonoBehaviour
         _groundPlane = new Plane(Vector3.up, new Vector3(0f, _worldY, 0f));
         _targetPosition = transform.position;
         ScreenPosition = _camera != null ? (Vector2)_camera.WorldToScreenPoint(transform.position) : Vector2.zero;
+
+        if (_followTarget != null)
+            _lastFollowPosition = _followTarget.position;
     }
 
     private bool Is3DMode => _settings == null || _settings.crosshairMode == GameSettings.CrosshairMode.World3D;
@@ -69,9 +76,29 @@ public class CrosshairController : MonoBehaviour
 
     private void Update()
     {
+        FollowTarget(); // <--- Добавили сдвиг за игроком
         ApplySmoothing();
         UpdateTarget();
         ApplyRendererMode();
+    }
+
+    private void FollowTarget()
+    {
+        if (_followTarget != null)
+        {
+            Vector3 delta = _followTarget.position - _lastFollowPosition;
+            if (delta.sqrMagnitude > 0.0001f)
+            {
+                // Смещаем позицию прицела и центр его ограничивающих рамок вслед за игроком
+                _targetPosition += delta;
+                _boundsCenter += delta;
+
+                if (!_useSmoothing)
+                    transform.position += delta;
+
+                _lastFollowPosition = _followTarget.position;
+            }
+        }
     }
 
     private void UpdateTarget()

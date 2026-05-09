@@ -236,6 +236,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 6a51870425536774f8f7c16420c28599, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1904547232506133378}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 6a51870425536774f8f7c16420c28599, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2812314006768452309}
   m_SourcePrefab: {fileID: 100100000, guid: 6a51870425536774f8f7c16420c28599, type: 3}
 --- !u!4 &2368909956092175725 stripped
 Transform:
@@ -313,3 +316,19 @@ MonoBehaviour:
   _meshRenderer: {fileID: 7247154295842480457}
   _deathEffect: {fileID: 363091108462685126}
   _healthBarOffset: {x: 0, y: 5, z: 0}
+--- !u!114 &2812314006768452309
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3146854648564088791}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5c7ef81f7e74684e94e899d2b215372, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TweenSwaying
+  _enableSway: 1
+  _swayAmount: 1.5
+  _swayDuration: 0.7
+  _tiltAxis: {x: 7, y: -90, z: 3}

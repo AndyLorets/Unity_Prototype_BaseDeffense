@@ -1,0 +1,2 @@
+D:\Unity\Unity Projects\BaseDeffense\Library\Bee\Android\Prj\IL2CPP\Gradle\unityLibrary\src\main\cpp\CMakeLists.txt
+D:\Unity\Unity Projects\BaseDeffense\Library\Bee\Android\Prj\IL2CPP\Gradle\unityLibrary\src\main\cpp\FramePacing\CMakeLists.txt
