@@ -93,14 +93,16 @@ Assets/Scripts/
 │   └── HealthBarPool.cs               # Pool HealthBarUI на Canvas; регистрируется в ServiceLocator
 ├── CrosshairController.cs             # Кроссхейр: движение (через джойстик), raycast, цвет, CurrentTarget
 ├── TargetController.cs                # База игрока: движение, AttackState/IdleState
-├── WeaponBase.cs                      # Абстрактное оружие: прицеливание, выстрел, индекс
-├── WeaponTurel.cs                     # Конкретное оружие (Auto-режим: стреляет при CurrentTarget != null)
+├── WeaponBase.cs                      # Абстрактное оружие: общий визуал (ParticleSystem, иконка), аудио, helper PlayShootFx()
+├── WeaponTurel.cs                     # Турель: поворот за прицелом, цветной урон по CurrentTarget (Auto-режим)
 ├── DualJoystickController.cs          # Статичные левый/правый джойстик; передаёт дельту в CrosshairController
 ├── EnemySpawnManager.cs               # Пул врагов, спавн по линиям
 ├── AudioManager.cs                    # Сервис звука (gun, target, explosion)
 ├── ScoreManager.cs                    # Статический счёт + события
 ├── ScoreView.cs                       # UI счёта с DOTween анимациями
 ├── SwipeController.cs                 # (устарел) Старый свайп-контроллер — заменён DualJoystickController
+├── WeaponSpecial.cs                   # Спец-атаки: nearest-to-base (−20% HP) и cursor-radius (100%/50% по splash); два независимых cd
+├── UI/SpecialAttackButtonUI.cs        # UI-кнопка спец-атаки: alpha + interactable по IsReady
 ├── IndexInfo.cs                       # ScriptableObject: 4 цвета по индексу
 ├── ITakeDamage.cs                     # Интерфейс: index + TakeDamage(value, index)
 ├── GameManager.cs                     # Framerate (60 FPS), перезапуск → сцена 0
@@ -143,3 +145,36 @@ Assets/Scripts/
   - `HealthBarUI` следует за 3D-целью в `LateUpdate` через `Camera.WorldToScreenPoint` (камера кэшируется в пуле, не дёргаем `Camera.main` каждый кадр); прячется при `screenPos.z < 0`
   - `UpdateHealth(current, max)` плавно тянет `Image.fillAmount` через `DOFillAmount` (настраиваемые `_tweenDuration`, `_tweenEase` в инспекторе); `SetHealthInstant` — без анимации (для первичной привязки/респавна)
   - `EnemyShipBase` берёт бар в `OnEnable` (вызывает `SetHealthInstant`), возвращает в `OnDisable` и в `Death` (чтобы бар не висел во время 3-секундной задержки до `Reconstruct`); per-enemy `_healthBarOffset` в инспекторе
+
+## Изменения (v3 — Single-hand + Special Attacks)
+
+### Убрано
+- Левая пушка / левый прицел / левый джойстик — в сцене остаётся **один** правый стек: прицел + автопушка + джойстик
+- В `DualJoystickController` удалены поля `_leftCrosshair`, `_leftFixedJoystick`, `_leftFloatingJoystick` и парные finger-id — только одна ссылка на джойстик/прицел
+
+### Добавлено / изменено
+- **`DualJoystickController`** — теперь управляет одним прицелом. Поля:
+  - `HandSide _handSide` (`Right` / `Left`, по умолчанию `Right`) — выбирается в инспекторе; задаёт, какая половина экрана активна для тача (вторая отдана под кнопки)
+  - `CrosshairController _crosshair`, `FixedJoystick _fixedJoystick`, `VariableJoystick _floatingJoystick`
+  - Логика `Delta` / `Velocity` сохранена, просто работает с одним прицелом; `IsInHandHalf(screenPos)` определяет валидные касания
+- **`EnemySpawnManager`** — синглтон `Instance` (init в `Awake`), реестр активных врагов:
+  - `RegisterActive(EnemyShipBase)` / `UnregisterActive(EnemyShipBase)` — вызываются из `OnEnable` / `OnDisable` врага
+  - `FindNearestToPosition(Vector3)` — линейный перебор по списку (для spec-атаки «ближайший к базе»)
+  - `FindEnemiesInRadius(Vector3, float, List<EnemyShipBase>)` — заполняет переданный буфер, без аллокаций
+- **`EnemyShipBase`** — расширен для спец-атак:
+  - `public const float MaxHp = 100f`, `CurrentHp`, `IsDead` — публичные геттеры
+  - `TakeDamagePercent(float percent01)` — урон в процентах от MaxHp **без учёта цвета/индекса** (отличие от `TakeDamage`)
+  - Общая логика урона вынесена в `ApplyDamage(value)`: `_isDead = true` ставится **сразу** при достижении 0 HP, до `Invoke(Death)` — защита от двойного срабатывания смерти при splash-уроне
+  - `OnEnable` / `OnDisable` регистрируют/снимают врага в `EnemySpawnManager.Instance`
+- **`WeaponBase` рефакторен**: остался только общий слой (визуал `_shootEffect`/`_iconMR`, аудио `_audioEffect`, helper `PlayShootFx()`, окраска иконки по `_iconColorIndex`). Логика прицела / поворота / цветного урона переехала в `WeaponTurel`. Это позволило `WeaponSpecial` наследоваться от `WeaponBase` и переиспользовать визуал/аудио без таскания мёртвых полей `_damageValue` / `_damgeIndex` / `_crosshair`.
+- **`WeaponSpecial : WeaponBase`** (`Assets/Scripts/WeaponSpecial.cs`) — компонент на игроке/корне пушки. Два независимых cooldown'а:
+  - `TryFireNearestToBase()` → `_nearestDamagePercent` (по умолчанию 0.2) ближайшему к `_basePoint`, cd `_nearestCooldown` (1 c)
+  - `TryFireAtCursorRadius()` → собирает врагов в `_splashRadius` вокруг `_cursorCrosshair`; ≤ `_directHitRadius` → `_radiusFullDamagePercent` (100%), иначе → `_radiusSplashDamagePercent` (50%); cd `_radiusCooldown` (5 c)
+  - `IsReady(AttackKind)` / `GetCooldownRemaining(AttackKind)` — для UI; `enum AttackKind { NearestToBase, CursorRadius }`
+  - Внутренний `List<EnemyShipBase>` буфер переиспользуется между вызовами (без аллокаций per shot)
+- **`SpecialAttackButtonUI`** (`Assets/Scripts/UI/SpecialAttackButtonUI.cs`) — `[RequireComponent(Button)]`, в `Awake` добавляет `CanvasGroup`, если его нет. Поля: `WeaponSpecial _weapon`, `AttackKind _kind`. `OnClick` → соответствующий `TryFire...`. В `Update`: `_button.interactable = IsReady`; `_canvasGroup.alpha = IsReady ? 1f : 0.5f`. **Без** прогресс-бара / radial fill — только alpha + interactable.
+
+### Что НЕ изменилось
+- Цветная механика основной пушки (`WeaponTurel` / `WeaponBase.TakeDamage(value, index)`) — урон по совпадению индекса остался прежним
+- `CrosshairController` API (`ApplyDelta` / `ApplyVelocity`) не тронут
+- HealthBarPool / HealthBarUI / ScoreManager / AudioManager без изменений

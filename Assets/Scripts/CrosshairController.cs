@@ -31,6 +31,9 @@ public class CrosshairController : MonoBehaviour
 
     public Vector2 ScreenPosition { get; private set; }
 
+    public Vector3 BoundsCenter => _boundsCenter;
+    public Vector3 BoundsSize => _boundsSize;
+
     private Plane _groundPlane;
     private Vector3 _targetPosition;
     private Vector3 _lastFollowPosition;

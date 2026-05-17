@@ -1,9 +1,9 @@
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 public class DualJoystickController : MonoBehaviour
 {
     public enum InputMode { Delta, Velocity }
+    public enum HandSide { Right, Left }
 
     [Header("Input mode")]
     [SerializeField] private InputMode _mode = InputMode.Velocity;
@@ -14,23 +14,27 @@ public class DualJoystickController : MonoBehaviour
         set { _mode = value; ApplyModeVisuals(); }
     }
 
-    [Header("Crosshairs")]
-    [SerializeField] private CrosshairController _leftCrosshair;
-    [SerializeField] private CrosshairController _rightCrosshair;
+    [Header("Hand side")]
+    [SerializeField] private HandSide _handSide = HandSide.Right;
+
+    public HandSide Hand
+    {
+        get => _handSide;
+        set => _handSide = value;
+    }
+
+    [Header("Crosshair")]
+    [SerializeField] private CrosshairController _crosshair;
 
     [Header("Velocity mode")]
-    [SerializeField] private FixedJoystick _leftFixedJoystick;
-    [SerializeField] private FixedJoystick _rightFixedJoystick;
+    [SerializeField] private FixedJoystick _fixedJoystick;
 
     [Header("Delta mode")]
-    [SerializeField] private VariableJoystick _leftFloatingJoystick;
-    [SerializeField] private VariableJoystick _rightFloatingJoystick;
+    [SerializeField] private VariableJoystick _floatingJoystick;
     [SerializeField] private float _deltaScale = 1f;
 
-    private int _leftFingerId = -1;
-    private int _rightFingerId = -1;
-    private Vector2 _leftLastPos;
-    private Vector2 _rightLastPos;
+    private int _fingerId = -1;
+    private Vector2 _lastPos;
 
     private void Awake()
     {
@@ -45,10 +49,8 @@ public class DualJoystickController : MonoBehaviour
     private void ApplyModeVisuals()
     {
         bool velocity = _mode == InputMode.Velocity;
-        if (_leftFixedJoystick != null) _leftFixedJoystick.gameObject.SetActive(velocity);
-        if (_rightFixedJoystick != null) _rightFixedJoystick.gameObject.SetActive(velocity);
-        if (_leftFloatingJoystick != null) _leftFloatingJoystick.gameObject.SetActive(!velocity);
-        if (_rightFloatingJoystick != null) _rightFloatingJoystick.gameObject.SetActive(!velocity);
+        if (_fixedJoystick != null) _fixedJoystick.gameObject.SetActive(velocity);
+        if (_floatingJoystick != null) _floatingJoystick.gameObject.SetActive(!velocity);
     }
 
     private void Update()
@@ -61,80 +63,61 @@ public class DualJoystickController : MonoBehaviour
 
     private void UpdateVelocity()
     {
-        if (_leftCrosshair != null && _leftFixedJoystick != null)
-            _leftCrosshair.ApplyVelocity(_leftFixedJoystick.Direction);
+        if (_crosshair != null && _fixedJoystick != null)
+            _crosshair.ApplyVelocity(_fixedJoystick.Direction);
+    }
 
-        if (_rightCrosshair != null && _rightFixedJoystick != null)
-            _rightCrosshair.ApplyVelocity(_rightFixedJoystick.Direction);
+    private bool IsInHandHalf(Vector2 screenPos)
+    {
+        float halfWidth = Screen.width * 0.5f;
+        return _handSide == HandSide.Right ? screenPos.x >= halfWidth : screenPos.x < halfWidth;
     }
 
     private void UpdateDelta()
     {
-        float halfWidth = Screen.width * 0.5f;
-
 #if UNITY_EDITOR || UNITY_STANDALONE
         if (Input.GetMouseButtonDown(0))
         {
             Vector2 pos = Input.mousePosition;
-            if (pos.x < halfWidth)
-                _leftLastPos = pos;
-            else
-                _rightLastPos = pos;
+            if (IsInHandHalf(pos))
+                _lastPos = pos;
         }
         else if (Input.GetMouseButton(0))
         {
             Vector2 pos = Input.mousePosition;
-            if (pos.x < halfWidth)
+            if (IsInHandHalf(pos))
             {
-                Vector2 delta = pos - _leftLastPos;
-                if (_leftCrosshair != null) _leftCrosshair.ApplyDelta(delta * _deltaScale);
-                _leftLastPos = pos;
-            }
-            else
-            {
-                Vector2 delta = pos - _rightLastPos;
-                if (_rightCrosshair != null) _rightCrosshair.ApplyDelta(delta * _deltaScale);
-                _rightLastPos = pos;
+                Vector2 delta = pos - _lastPos;
+                if (_crosshair != null) _crosshair.ApplyDelta(delta * _deltaScale);
+                _lastPos = pos;
             }
         }
 #else
         for (int i = 0; i < Input.touchCount; i++)
         {
             Touch touch = Input.touches[i];
-            bool isLeft = touch.position.x < halfWidth;
+            bool inHandHalf = IsInHandHalf(touch.position);
 
             if (touch.phase == TouchPhase.Began)
             {
-                if (isLeft && _leftFingerId == -1)
+                if (inHandHalf && _fingerId == -1)
                 {
-                    _leftFingerId = touch.fingerId;
-                    _leftLastPos = touch.position;
-                }
-                else if (!isLeft && _rightFingerId == -1)
-                {
-                    _rightFingerId = touch.fingerId;
-                    _rightLastPos = touch.position;
+                    _fingerId = touch.fingerId;
+                    _lastPos = touch.position;
                 }
             }
             else if (touch.phase == TouchPhase.Moved || touch.phase == TouchPhase.Stationary)
             {
-                if (touch.fingerId == _leftFingerId && _leftCrosshair != null)
+                if (touch.fingerId == _fingerId && _crosshair != null)
                 {
-                    Vector2 delta = touch.position - _leftLastPos;
-                    _leftCrosshair.ApplyDelta(delta * _deltaScale);
-                    _leftLastPos = touch.position;
-                }
-                else if (touch.fingerId == _rightFingerId && _rightCrosshair != null)
-                {
-                    Vector2 delta = touch.position - _rightLastPos;
-                    _rightCrosshair.ApplyDelta(delta * _deltaScale);
-                    _rightLastPos = touch.position;
+                    Vector2 delta = touch.position - _lastPos;
+                    _crosshair.ApplyDelta(delta * _deltaScale);
+                    _lastPos = touch.position;
                 }
             }
             else if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
             {
-                if (touch.fingerId == _leftFingerId) _leftFingerId = -1;
-                else if (touch.fingerId == _rightFingerId) _rightFingerId = -1;
+                if (touch.fingerId == _fingerId) _fingerId = -1;
             }
         }
 #endif

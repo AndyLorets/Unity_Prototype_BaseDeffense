@@ -23,24 +23,8 @@ public class AudioManager : MonoBehaviour
     {
         _explosionAudioSource.Play(); 
     }
-    public void PlayOneShot(AudioClip audio, float delay = .2f, int count = 3)
+    public void PlayOneShot(AudioClip audio)
     {
-        if (_isDeleying) return;
-
-        StartCoroutine(PlayOneShotCoroutine(audio, delay, count)); 
-    }
-    private IEnumerator PlayOneShotCoroutine(AudioClip audio, float delay, int count)
-    {
-        _isDeleying = true;
-        int currentCount = count; 
-        while (currentCount > 0)
-        {
-            _gunAudioSource.PlayOneShot(audio); 
-            currentCount--;
-
-            if (currentCount == 0) _isDeleying = false; 
-
-            yield return new WaitForSeconds(delay); 
-        }
+        _gunAudioSource.PlayOneShot(audio);
     }
 }
