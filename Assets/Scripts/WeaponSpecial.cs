@@ -38,6 +38,9 @@ public class WeaponSpecial : WeaponBase
     [SerializeField] private Ease _aimEase = Ease.OutQuad;
     [SerializeField] private Ease _returnEase = Ease.InOutQuad;
 
+    public float NearestCooldown => _nearestCooldown;
+    public float RadiusCooldown => _radiusCooldown;
+
     private float _nearestNextReadyTime;
     private float _radiusNextReadyTime;
 
@@ -96,7 +99,7 @@ public class WeaponSpecial : WeaponBase
         return true;
     }
 
-    private EnemyShipBase FindNearestInActivationZone()
+    public EnemyShipBase FindNearestInActivationZone()
     {
         EnemySpawnManager spawn = EnemySpawnManager.Instance;
         if (spawn == null || _basePoint == null) return null;

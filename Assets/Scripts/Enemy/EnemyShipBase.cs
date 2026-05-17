@@ -22,9 +22,6 @@ public abstract class EnemyShipBase : MonoBehaviour, ITakeDamage
     private float _deathYawSpeed;
 
     protected Collider _coll;
-
-    [SerializeField] private IndexInfo _indexInfo;
-    [SerializeField] private MeshRenderer _meshRenderer;
     [SerializeField] private ParticleSystem _deathEffect;
     [SerializeField] private Vector3 _healthBarOffset = new Vector3(0f, 2f, 0f);
 
@@ -168,7 +165,6 @@ public abstract class EnemyShipBase : MonoBehaviour, ITakeDamage
     {
         index = inx;
         moveSpeed = movespeed;
-        _meshRenderer.material.color = _indexInfo.GetIndexColor(inx);
         _deathEffectPos = _deathEffect.transform.position;
     }
 

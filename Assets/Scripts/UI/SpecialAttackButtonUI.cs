@@ -7,6 +7,7 @@ public class SpecialAttackButtonUI : MonoBehaviour
     [SerializeField] private WeaponSpecial _weapon;
     [SerializeField] private AttackKind _kind;
     [SerializeField] private float _disabledAlpha = 0.5f;
+    [SerializeField] private Image _cooldownFill;
 
     private Button _button;
     private CanvasGroup _canvasGroup;
@@ -19,6 +20,9 @@ public class SpecialAttackButtonUI : MonoBehaviour
             _canvasGroup = gameObject.AddComponent<CanvasGroup>();
 
         _button.onClick.AddListener(OnClick);
+
+        if (_cooldownFill != null)
+            _cooldownFill.fillAmount = 0f;
     }
 
     private void OnDestroy()
@@ -38,6 +42,19 @@ public class SpecialAttackButtonUI : MonoBehaviour
         float targetAlpha = ready ? 1f : _disabledAlpha;
         if (!Mathf.Approximately(_canvasGroup.alpha, targetAlpha))
             _canvasGroup.alpha = targetAlpha;
+
+        if (_cooldownFill != null)
+        {
+            float cooldown = _kind == AttackKind.NearestToBase
+                ? _weapon.GetCooldownRemaining(AttackKind.NearestToBase)
+                : _weapon.GetCooldownRemaining(AttackKind.CrosshairRadius);
+
+            float total = _kind == AttackKind.NearestToBase
+                ? _weapon.NearestCooldown
+                : _weapon.RadiusCooldown;
+
+            _cooldownFill.fillAmount = total > 0f ? cooldown / total : 0f;
+        }
     }
 
     private void OnClick()
