@@ -174,6 +174,7 @@ public abstract class EnemyShipBase : MonoBehaviour, ITakeDamage
         transform.localScale = Vector3.one;
         transform.localRotation = _startRotation;
 
+        ReleaseHealthBar();
         gameObject.SetActive(false);
 
         _hp = MaxHp;
@@ -188,6 +189,7 @@ public abstract class EnemyShipBase : MonoBehaviour, ITakeDamage
         if (collision.gameObject.CompareTag(Tags.Basa))
         {
             ScoreManager.RemoveScore(10);
+            onDeath?.Invoke(this);
             Reconstruct();
         }
     }

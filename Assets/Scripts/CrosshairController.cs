@@ -60,13 +60,42 @@ public class CrosshairController : MonoBehaviour
 
     private void Awake()
     {
-        if (_camera == null) _camera = Camera.main;
         _groundPlane = new Plane(Vector3.up, new Vector3(0f, _worldY, 0f));
         _targetPosition = transform.position;
-        ScreenPosition = _camera != null ? (Vector2)_camera.WorldToScreenPoint(transform.position) : Vector2.zero;
 
         if (_followTarget != null)
             _lastFollowPosition = _followTarget.position;
+    }
+
+    private void Start()
+    {
+        Camera cam = OrientationManager.Instance?.ActiveCamera
+                  ?? _camera
+                  ?? Camera.main;
+        SetCamera(cam);
+    }
+
+    private void OnEnable()
+    {
+        OrientationManager.OnOrientationChanged += OnOrientationChanged;
+    }
+
+    private void OnDisable()
+    {
+        OrientationManager.OnOrientationChanged -= OnOrientationChanged;
+    }
+
+    private void OnOrientationChanged(bool portrait)
+    {
+        if (OrientationManager.Instance?.ActiveCamera != null)
+            SetCamera(OrientationManager.Instance.ActiveCamera);
+    }
+
+    public void SetCamera(Camera cam)
+    {
+        _camera = cam;
+        if (_camera != null)
+            ScreenPosition = (Vector2)_camera.WorldToScreenPoint(transform.position);
     }
 
     private bool Is3DMode => _settings == null || _settings.crosshairMode == GameSettings.CrosshairMode.World3D;

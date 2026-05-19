@@ -132,11 +132,21 @@ public class EnemysOnLine
     }
     public void StartEnemy()
     {
-        if (_enemyList == null) return;
+        if (_enemyList == null || _enemyList.Count == 0) return;
 
-        int r = Random.Range(0, _enemyList.Count);
-        _enemyList[r].gameObject.SetActive(true);
-        _enemyList.RemoveAt(r);
+        // Find a ready (inactive, not dead) enemy to avoid spawning a still-dying one.
+        int startIdx = Random.Range(0, _enemyList.Count);
+        for (int i = 0; i < _enemyList.Count; i++)
+        {
+            int idx = (startIdx + i) % _enemyList.Count;
+            EnemyShipBase candidate = _enemyList[idx];
+            if (!candidate.gameObject.activeInHierarchy)
+            {
+                _enemyList.RemoveAt(idx);
+                candidate.gameObject.SetActive(true);
+                return;
+            }
+        }
     }
     private void OnEnemyDeath(EnemyShipBase enemyShipBase) => _enemyList.Add(enemyShipBase);
 }

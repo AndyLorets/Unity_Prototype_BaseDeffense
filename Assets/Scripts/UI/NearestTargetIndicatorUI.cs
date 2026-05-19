@@ -11,9 +11,29 @@ public class NearestTargetIndicatorUI : MonoBehaviour
 
     private void Awake()
     {
-        _camera = Camera.main;
         if (_indicator != null)
             _indicator.gameObject.SetActive(false);
+    }
+
+    private void Start()
+    {
+        _camera = OrientationManager.Instance?.ActiveCamera ?? Camera.main;
+    }
+
+    private void OnEnable()
+    {
+        OrientationManager.OnOrientationChanged += OnOrientationChanged;
+    }
+
+    private void OnDisable()
+    {
+        OrientationManager.OnOrientationChanged -= OnOrientationChanged;
+    }
+
+    private void OnOrientationChanged(bool portrait)
+    {
+        if (OrientationManager.Instance?.ActiveCamera != null)
+            _camera = OrientationManager.Instance.ActiveCamera;
     }
 
     private void LateUpdate()

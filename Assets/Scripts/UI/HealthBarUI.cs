@@ -21,6 +21,8 @@ public class HealthBarUI : MonoBehaviour
         _rect = (RectTransform)transform;
     }
 
+    public void UpdateCamera(Camera cam) { _camera = cam; }
+
     // Привязывает бар к цели. Камеру пробрасывает пул (избегаем Camera.main каждый кадр).
     public void Bind(Transform target, Vector3 offset, Camera cam)
     {
@@ -71,7 +73,7 @@ public class HealthBarUI : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (!_follow || _target == null || _camera == null) return;
+        if (!_follow || _target == null || !_target.gameObject.activeInHierarchy || _camera == null) return;
 
         Vector3 screenPos = _camera.WorldToScreenPoint(_target.position + _offset);
 

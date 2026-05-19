@@ -10,6 +10,7 @@ public class HealthBarPool : MonoBehaviour
     [SerializeField] private Vector3 _defaultOffset = new Vector3(0f, 2f, 0f);
 
     private readonly Stack<HealthBarUI> _free = new Stack<HealthBarUI>();
+    private readonly List<HealthBarUI> _active = new List<HealthBarUI>();
     private Camera _camera;
 
     public Vector3 DefaultOffset => _defaultOffset;
@@ -30,17 +31,27 @@ public class HealthBarPool : MonoBehaviour
         return bar;
     }
 
+    public void SetCamera(Camera cam)
+    {
+        _camera = cam;
+        foreach (var bar in _active)
+            bar.UpdateCamera(cam);
+    }
+
     public HealthBarUI Get(Transform target, Vector3 offset)
     {
         HealthBarUI bar = _free.Count > 0 ? _free.Pop() : CreateInstance();
         bar.transform.SetAsLastSibling();
         bar.Bind(target, offset, _camera);
+        _active.Add(bar);
         return bar;
     }
 
     public void Release(HealthBarUI bar)
     {
         if (bar == null) return;
+        // Guard against double-release: if not in _active, bar is already free.
+        if (!_active.Remove(bar)) return;
         bar.Unbind();
         _free.Push(bar);
     }
